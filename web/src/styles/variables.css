@@ -1,0 +1,26 @@
+/* src/styles/variables.css */
+:root {
+  /* Colors - Premium Palette */
+  --primary: #6c5dd3; /* Violet SociaPlan */
+  --secondary: #a0d7e7; /* Light Blue */
+  --accent: #ff754c; /* Orange Notification */
+
+  --bg-main: #f4f5f9; /* Light Grey Background */
+  --bg-card: #ffffff;
+
+  --text-main: #11142d; /* Dark Navy */
+  --text-secondary: #808191; /* Grey Text */
+
+  /* Shadows */
+  --shadow-sm: 0px 2px 4px rgba(228, 228, 228, 0.5);
+  --shadow-card: 0px 10px 20px rgba(0, 0, 0, 0.05);
+
+  /* Radius */
+  --radius-xl: 20px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+
+  /* Spacing */
+  --sidebar-width: 250px;
+  --header-height: 80px;
+}
