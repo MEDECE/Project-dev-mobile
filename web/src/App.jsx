@@ -1,21 +1,16 @@
-import "./App.css";
-
-import logo from "./assets/react.svg";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Dashboard from "./pages/Dashboard";
+import Admin from "./pages/Admin";
 
 function App() {
   return (
-    <div
-      style={{
-        marginTop: "auto",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        height: "100vh",
-      }}
-    >
-      <h1 style={{ marginTop: "auto" }}>Let's Start !</h1>
-      <img src={logo} alt="react_logo" style={{ marginBottom: "auto" }} />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/admin" element={<Admin />} />
+      </Routes>
+    </Router>
   );
 }
 
