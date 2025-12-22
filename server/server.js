@@ -365,6 +365,303 @@ app.get("/api/analytics/temperature-trend", async (req, res) => {
   }
 });
 
+// === BUSINESS & CROISSANCE ENDPOINTS ===
+
+// Endpoint H: Deployment Speed (Sensors per month/year)
+app.get("/api/business/deployment-speed", async (req, res) => {
+  try {
+    const result = await Sensor.aggregate([
+      // creationDate is already a Date object in MongoDB
+      {
+        $group: {
+          _id: {
+            year: { $year: "$creationDate" },
+            month: { $month: "$creationDate" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          year: "$_id.year",
+          month: "$_id.month",
+          count: 1,
+        },
+      },
+      { $sort: { year: 1, month: 1 } },
+    ]);
+
+    const monthNames = [
+      "Jan",
+      "Fév",
+      "Mar",
+      "Avr",
+      "Mai",
+      "Juin",
+      "Juil",
+      "Août",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Déc",
+    ];
+    const formatted = result.map((r) => ({
+      name: `${monthNames[r.month - 1]} ${r.year}`,
+      value: r.count,
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint I: Customer Segmentation (House size x Persons)
+app.get("/api/business/segmentation", async (req, res) => {
+  try {
+    const result = await User.aggregate([
+      {
+        $group: {
+          _id: {
+            houseSize: "$houseSize",
+            personCategory: {
+              $switch: {
+                branches: [
+                  { case: { $lte: ["$personsInHouse", 2] }, then: "1-2 pers." },
+                  { case: { $lte: ["$personsInHouse", 4] }, then: "3-4 pers." },
+                ],
+                default: "5+ pers.",
+              },
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          segment: {
+            $concat: ["$_id.houseSize", " - ", "$_id.personCategory"],
+          },
+          houseSize: "$_id.houseSize",
+          personCategory: "$_id.personCategory",
+          value: "$count",
+        },
+      },
+      { $sort: { value: -1 } },
+    ]);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// === SANTÉ & ENVIRONNEMENT ENDPOINTS ===
+
+// Endpoint J: Comfort Radar (Metrics by Room)
+app.get("/api/health/comfort-radar", async (req, res) => {
+  try {
+    const result = await Measure.aggregate([
+      {
+        $lookup: {
+          from: "sensors",
+          localField: "sensorID",
+          foreignField: "_id",
+          as: "sensor",
+        },
+      },
+      { $unwind: "$sensor" },
+      {
+        $group: {
+          _id: {
+            room: "$sensor.location",
+            metric: "$type",
+          },
+          avgValue: { $avg: "$value" },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.room",
+          metrics: {
+            $push: {
+              metric: "$_id.metric",
+              value: { $round: ["$avgValue", 1] },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          room: "$_id",
+          metrics: 1,
+        },
+      },
+    ]);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint K: Top 5 Risky Countries (Worst Pollution)
+app.get("/api/health/top-risky-countries", async (req, res) => {
+  try {
+    const result = await Measure.aggregate([
+      { $match: { type: "airPollution" } },
+      {
+        $lookup: {
+          from: "sensors",
+          localField: "sensorID",
+          foreignField: "_id",
+          as: "sensor",
+        },
+      },
+      { $unwind: "$sensor" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "sensor.userID",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $group: {
+          _id: "$user.location",
+          avgPollution: { $avg: "$value" },
+          maxPollution: { $max: "$value" },
+          measureCount: { $sum: 1 },
+        },
+      },
+      { $sort: { avgPollution: -1 } },
+      { $limit: 5 },
+      {
+        $project: {
+          _id: 0,
+          country: "$_id",
+          avgPollution: { $round: ["$avgPollution", 1] },
+          maxPollution: 1,
+          measureCount: 1,
+        },
+      },
+    ]);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// === TECHNIQUE & ANOMALIES ENDPOINTS ===
+
+// Endpoint L: Critical Alerts (Extreme Measures)
+app.get("/api/technical/critical-alerts", async (req, res) => {
+  try {
+    const result = await Measure.aggregate([
+      {
+        $match: {
+          $or: [
+            { type: "airPollution", value: { $gt: 80 } },
+            { type: "temperature", value: { $lt: 5 } },
+            { type: "temperature", value: { $gt: 35 } },
+            { type: "humidity", value: { $gt: 85 } },
+          ],
+        },
+      },
+      {
+        $lookup: {
+          from: "sensors",
+          localField: "sensorID",
+          foreignField: "_id",
+          as: "sensor",
+        },
+      },
+      { $unwind: "$sensor" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "sensor.userID",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      { $sort: { creationDate: -1 } },
+      { $limit: 10 },
+      {
+        $project: {
+          _id: 0,
+          type: 1,
+          value: 1,
+          creationDate: 1,
+          room: "$sensor.location",
+          country: "$user.location",
+          severity: {
+            $switch: {
+              branches: [
+                {
+                  case: {
+                    $and: [
+                      { $eq: ["$type", "airPollution"] },
+                      { $gt: ["$value", 90] },
+                    ],
+                  },
+                  then: "critical",
+                },
+                {
+                  case: {
+                    $or: [{ $lt: ["$value", 0] }, { $gt: ["$value", 40] }],
+                  },
+                  then: "critical",
+                },
+              ],
+              default: "warning",
+            },
+          },
+        },
+      },
+    ]);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint M: Temp-Humidity Correlation (Scatter Plot)
+app.get("/api/technical/temp-humidity-correlation", async (req, res) => {
+  try {
+    // Get temperature and humidity for same sensors
+    const tempMeasures = await Measure.aggregate([
+      { $match: { type: "temperature" } },
+      { $group: { _id: "$sensorID", avgTemp: { $avg: "$value" } } },
+    ]);
+
+    const humidityMeasures = await Measure.aggregate([
+      { $match: { type: "humidity" } },
+      { $group: { _id: "$sensorID", avgHumidity: { $avg: "$value" } } },
+    ]);
+
+    // Combine by finding matching sensor IDs
+    const result = [];
+    for (const temp of tempMeasures) {
+      const humidity = humidityMeasures.find((h) => h._id.equals(temp._id));
+      if (humidity) {
+        result.push({
+          x: Math.round(temp.avgTemp * 10) / 10,
+          y: Math.round(humidity.avgHumidity * 10) / 10,
+        });
+      }
+    }
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Start Server
 connectDB().then(() => {
   app.listen(PORT, () => {
