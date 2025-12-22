@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { Users, Wifi, Activity, CloudRain } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Users, Wifi, Activity, CloudRain, ChevronRight } from "lucide-react";
+import api from "../services/api";
 import Layout from "../components/layout/Layout";
 import KPICard from "../components/widgets/KPICard";
 import WorldMapWidget from "../components/widgets/WorldMapWidget";
@@ -9,22 +10,27 @@ import TopCountriesWidget from "../components/widgets/TopCountriesWidget";
 import "./Dashboard.css";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [kpi, setKpi] = useState({
-    users: { value: 0, trend: "", label: "Total Users" },
-    sensors: { value: 0, trend: "", label: "Active Sensors" },
-    measures: { value: 0, trend: "", label: "Data Points" },
+    totalUsers: 0,
+    totalSensors: 0,
+    avgGlobalPollution: 0,
   });
+  const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    const fetchKpi = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/api/stats/kpi");
-        setKpi(response.data);
+        const kpiRes = await api.get("/kpis");
+        setKpi(kpiRes.data);
+
+        const usersRes = await api.get("/users");
+        setUsers(usersRes.data);
       } catch (error) {
-        console.error("KPI Error:", error);
+        console.error("Dashboard Data Error:", error);
       }
     };
-    fetchKpi();
+    fetchData();
   }, []);
 
   return (
@@ -32,23 +38,23 @@ const Dashboard = () => {
       <div className="dashboard-grid">
         {/* Row 1: KPIs */}
         <KPICard
-          label={kpi.users.label}
-          value={kpi.users.value}
-          trend={kpi.users.trend}
+          label="Total Users"
+          value={kpi.totalUsers}
+          trend="+12%"
           icon={Users}
           color="108, 93, 211" // Violet
         />
         <KPICard
-          label={kpi.sensors.label}
-          value={kpi.sensors.value}
-          trend={kpi.sensors.trend}
+          label="Active Sensors"
+          value={kpi.totalSensors}
+          trend="+5%"
           icon={Wifi}
           color="255, 117, 76" // Orange
         />
         <KPICard
-          label={kpi.measures.label}
-          value={kpi.measures.value}
-          trend={kpi.measures.trend}
+          label="Avg Global Pollution"
+          value={kpi.avgGlobalPollution?.toFixed(2)}
+          trend="-2%"
           icon={Activity}
           color="46, 204, 113" // Green
         />
@@ -64,8 +70,40 @@ const Dashboard = () => {
         <WorldMapWidget />
         <TopCountriesWidget />
 
-        {/* Row 3: Full Width Chart */}
-        <AnalyticsChart />
+        {/* Row 3: Users List & Charts */}
+        <div className="col-span-12 lg:col-span-4 bg-gray-800 rounded-2xl p-6 border border-gray-700">
+          <h3 className="text-lg font-bold text-white mb-4">
+            Registered Households
+          </h3>
+          <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+            {users.map((user) => (
+              <div
+                key={user._id}
+                onClick={() => navigate(`/house/${user._id}`)}
+                className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg cursor-pointer hover:bg-gray-700/50 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold">
+                    {user.personsInHouse}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white line-clamp-1">
+                      {user._id}
+                    </p>
+                    <p className="text-xs text-gray-400capitalize">
+                      {user.location} • {user.houseSize}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-500 group-hover:text-white" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="col-span-12 lg:col-span-8">
+          <AnalyticsChart />
+        </div>
       </div>
     </Layout>
   );
