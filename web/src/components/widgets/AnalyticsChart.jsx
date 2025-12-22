@@ -15,25 +15,17 @@ const AnalyticsChart = () => {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    const fetchTrend = async () => {
-      try {
-        const response = await axios.get(
-          "http://localhost:3000/api/stats/trend"
-        );
-        // Format for Chart
-        const chartData = response.data.map((m) => ({
-          name: new Date(m.creationDate).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          value: m.value,
-        }));
-        setData(chartData);
-      } catch (error) {
-        console.error("Chart error:", error);
-      }
-    };
-    fetchTrend();
+    // Mock data for POC visualization (Endpoint not requested in specs)
+    const mockData = [
+      { name: "00:00", value: 400 },
+      { name: "04:00", value: 300 },
+      { name: "08:00", value: 550 },
+      { name: "12:00", value: 450 },
+      { name: "16:00", value: 600 },
+      { name: "20:00", value: 700 },
+      { name: "23:59", value: 500 },
+    ];
+    setData(mockData);
   }, []);
 
   return (

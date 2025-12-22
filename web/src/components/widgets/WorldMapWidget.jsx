@@ -7,12 +7,11 @@ import {
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import axios from "axios";
-import { scaleLinear } from "d3-scale"; // Re-use d3-scale if installed, or simple math
+import api from "../../services/api";
 import "./WorldMapWidget.css";
 
 // Fix for default Leaflet icon issues in React
 import L from "leaflet";
-// We don't need markers for this view, but good practice to fix for future
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: null,
@@ -25,19 +24,20 @@ const geoUrl =
 
 const WorldMapWidget = () => {
   const [geoData, setGeoData] = useState(null);
-  const [statsData, setStatsData] = useState([]);
+  const [countryStats, setCountryStats] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch GeoJSON and Stats
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [geoRes, statsRes] = await Promise.all([
-          axios.get(geoUrl),
-          axios.get("http://localhost:3000/api/stats/map"),
-        ]);
+        // Fetch GeoJSON from external source
+        const geoRes = await axios.get(geoUrl);
+        // Fetch Analysis from OUR Backend
+        const analysisRes = await api.get("/analysis");
+
         setGeoData(geoRes.data);
-        setStatsData(statsRes.data);
+        setCountryStats(analysisRes.data);
         setLoading(false);
       } catch (error) {
         console.error("Error loading map data:", error);
@@ -47,39 +47,51 @@ const WorldMapWidget = () => {
     fetchData();
   }, []);
 
-  // Simple sequential color scale logic since d3-scale might be uninstalled
-  const getColor = (countryName) => {
-    const countryStat = statsData.find(
-      (s) => s.name.toLowerCase() === countryName.toLowerCase()
+  // Helper to find pollution data for a country
+  const getPollutionValue = (countryName) => {
+    const countryData = countryStats.find(
+      (c) => c.country.toLowerCase() === countryName.toLowerCase()
     );
-    const value = countryStat ? countryStat.value : 0;
 
-    // Gradient from #EAEAEC to #6C5DD3
-    if (value > 10) return "#4A3DBB"; // Deep user base
-    if (value > 5) return "#6C5DD3"; // High
-    if (value > 0) return "#A0D7E7"; // Low
-    return "#EAEAEC"; // None
+    if (!countryData) return 0;
+
+    // Find airPollution specific metric
+    const pollutionMetric = countryData.averages.find(
+      (m) => m.type.toLowerCase() === "airpollution"
+    );
+    return pollutionMetric ? pollutionMetric.avg : 0;
+  };
+
+  const getColor = (countryName) => {
+    const value = getPollutionValue(countryName);
+
+    // Gradient based on Pollution High -> Low
+    // High pollution = Dark/Red? Or just maintain the violet theme?
+    // Let's stick to the violet theme: Darker = More Data/Pollution
+    if (value > 100) return "#4A3DBB";
+    if (value > 50) return "#6C5DD3";
+    if (value > 0) return "#A0D7E7";
+    return "#EAEAEC";
   };
 
   const onEachCountry = (country, layer) => {
     const countryName = country.properties.name;
-    const countryStat = statsData.find(
-      (s) => s.name.toLowerCase() === countryName.toLowerCase()
-    );
-    const value = countryStat ? countryStat.value : 0;
+    const value = getPollutionValue(countryName);
 
-    layer.bindTooltip(`${countryName}: ${value} users`, {
-      permanent: false,
-      direction: "center",
-      className: "country-tooltip",
-    });
+    if (value > 0) {
+      layer.bindTooltip(`${countryName}: ${value.toFixed(1)} AQI`, {
+        permanent: false,
+        direction: "center",
+        className: "country-tooltip",
+      });
+    }
 
     // Hover effects
     layer.on({
       mouseover: (e) => {
         const layer = e.target;
         layer.setStyle({
-          fillColor: "#FF754C", // Accent on hover
+          fillColor: "#FF754C", // Orange on hover
           fillOpacity: 0.9,
         });
       },
@@ -99,15 +111,15 @@ const WorldMapWidget = () => {
       fillColor: getColor(feature.properties.name),
       weight: 0.5,
       opacity: 1,
-      color: "white", // Border color
+      color: "white",
       fillOpacity: 1,
     };
   };
 
   return (
     <div className="widget map-widget">
-      <h3>Demographic Audience</h3>
-      <p className="widget-subtitle">Interactive Leaflet Map</p>
+      <h3>Global Air Pollution Levels</h3>
+      <p className="widget-subtitle">Average AQI per Country</p>
 
       <div className="map-container custom-leaflet-container">
         {loading ? (
@@ -119,7 +131,7 @@ const WorldMapWidget = () => {
               zoom={1.5}
               scrollWheelZoom={false}
               style={{ height: "100%", width: "100%", background: "#F4F5F9" }}
-              zoomControl={false} // Custom position
+              zoomControl={false}
             >
               <ZoomControl position="bottomright" />
               <GeoJSON
@@ -132,12 +144,14 @@ const WorldMapWidget = () => {
         )}
       </div>
 
-      {/* Legend built manually */}
       <div className="map-legend">
-        <span className="dot" style={{ background: "#4A3DBB" }}></span> &gt; 10
-        <span className="dot" style={{ background: "#6C5DD3" }}></span> 5-10
-        <span className="dot" style={{ background: "#A0D7E7" }}></span> 1-5
-        <span className="dot" style={{ background: "#EAEAEC" }}></span> 0
+        <span className="dot" style={{ background: "#4A3DBB" }}></span> High
+        (&gt;100)
+        <span className="dot" style={{ background: "#6C5DD3" }}></span> Med
+        (50-100)
+        <span className="dot" style={{ background: "#A0D7E7" }}></span> Low
+        (0-50)
+        <span className="dot" style={{ background: "#EAEAEC" }}></span> No Data
       </div>
     </div>
   );
