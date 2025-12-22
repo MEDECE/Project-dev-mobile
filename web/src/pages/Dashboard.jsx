@@ -11,6 +11,12 @@ import SensorDistributionWidget from "../components/widgets/SensorDistributionWi
 import PollutionBySizeWidget from "../components/widgets/PollutionBySizeWidget";
 import HumidityCorrelationWidget from "../components/widgets/HumidityCorrelationWidget";
 import TemperatureTrendWidget from "../components/widgets/TemperatureTrendWidget";
+import DeploymentSpeedWidget from "../components/widgets/DeploymentSpeedWidget";
+import CustomerSegmentationWidget from "../components/widgets/CustomerSegmentationWidget";
+import ComfortRadarWidget from "../components/widgets/ComfortRadarWidget";
+import TopRiskyCountriesWidget from "../components/widgets/TopRiskyCountriesWidget";
+import CriticalAlertsWidget from "../components/widgets/CriticalAlertsWidget";
+import TempHumidityCorrelationWidget from "../components/widgets/TempHumidityCorrelationWidget";
 import "./Dashboard.css";
 
 const Dashboard = () => {
@@ -128,6 +134,57 @@ const Dashboard = () => {
         <PollutionBySizeWidget />
         <HumidityCorrelationWidget />
         <TemperatureTrendWidget />
+
+        {/* Section: Business & Croissance */}
+        <div className="col-span-12 mt-6">
+          <h2
+            style={{
+              color: "#808191",
+              fontSize: "14px",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              marginBottom: "16px",
+            }}
+          >
+            💼 Vue Business & Croissance
+          </h2>
+        </div>
+        <DeploymentSpeedWidget />
+        <CustomerSegmentationWidget />
+
+        {/* Section: Santé & Environnement */}
+        <div className="col-span-12 mt-6">
+          <h2
+            style={{
+              color: "#808191",
+              fontSize: "14px",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              marginBottom: "16px",
+            }}
+          >
+            🏥 Vue Santé & Environnement
+          </h2>
+        </div>
+        <ComfortRadarWidget />
+        <TopRiskyCountriesWidget />
+
+        {/* Section: Technique & Anomalies */}
+        <div className="col-span-12 mt-6">
+          <h2
+            style={{
+              color: "#808191",
+              fontSize: "14px",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              marginBottom: "16px",
+            }}
+          >
+            🔧 Vue Technique & Anomalies
+          </h2>
+        </div>
+        <CriticalAlertsWidget />
+        <TempHumidityCorrelationWidget />
       </div>
     </Layout>
   );
