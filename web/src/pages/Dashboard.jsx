@@ -7,6 +7,10 @@ import KPICard from "../components/widgets/KPICard";
 import WorldMapWidget from "../components/widgets/WorldMapWidget";
 import AnalyticsChart from "../components/widgets/AnalyticsChart";
 import TopCountriesWidget from "../components/widgets/TopCountriesWidget";
+import SensorDistributionWidget from "../components/widgets/SensorDistributionWidget";
+import PollutionBySizeWidget from "../components/widgets/PollutionBySizeWidget";
+import HumidityCorrelationWidget from "../components/widgets/HumidityCorrelationWidget";
+import TemperatureTrendWidget from "../components/widgets/TemperatureTrendWidget";
 import "./Dashboard.css";
 
 const Dashboard = () => {
@@ -69,6 +73,7 @@ const Dashboard = () => {
         {/* Row 2: Map & Analytics */}
         <WorldMapWidget />
         <TopCountriesWidget />
+        <SensorDistributionWidget />
 
         {/* Row 3: Users List & Charts */}
         <div className="col-span-12 lg:col-span-4 bg-gray-800 rounded-2xl p-6 border border-gray-700">
@@ -90,7 +95,7 @@ const Dashboard = () => {
                     <p className="text-sm font-medium text-white line-clamp-1">
                       {user._id}
                     </p>
-                    <p className="text-xs text-gray-400capitalize">
+                    <p className="text-xs text-gray-400 capitalize">
                       {user.location} • {user.houseSize}
                     </p>
                   </div>
@@ -104,6 +109,25 @@ const Dashboard = () => {
         <div className="col-span-12 lg:col-span-8">
           <AnalyticsChart />
         </div>
+
+        {/* Row 4: Data Analyst Section */}
+        <div className="col-span-12 mt-6">
+          <h2
+            style={{
+              color: "#808191",
+              fontSize: "14px",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              marginBottom: "16px",
+            }}
+          >
+            📊 Vue Data Analyst - Corrélations & Tendances
+          </h2>
+        </div>
+
+        <PollutionBySizeWidget />
+        <HumidityCorrelationWidget />
+        <TemperatureTrendWidget />
       </div>
     </Layout>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../../services/api";
 
 const TopCountriesWidget = () => {
   const [countries, setCountries] = useState([]);
@@ -7,16 +7,31 @@ const TopCountriesWidget = () => {
   useEffect(() => {
     const fetchTop = async () => {
       try {
-        // Reuse map endpoint which is now sorted
-        const response = await axios.get("http://localhost:3000/api/stats/map");
-        // Take top 4 and calculate percentage if needed, or just values
-        // For simplicity let's show raw count and a calculated %
-        const total = response.data.reduce((acc, curr) => acc + curr.value, 0);
+        const response = await api.get("/analysis");
+        // Sort by pollution (airPollution avg) descending to show most polluted?
+        // Or number of users? The brief said "Analyse par Pays".
+        // Let's assume we show pollution level.
 
-        const top4 = response.data.slice(0, 4).map((c) => ({
-          ...c,
-          percent: total > 0 ? Math.round((c.value / total) * 100) : 0,
-        }));
+        const countriesData = response.data.map((c) => {
+          const pollution =
+            c.averages.find((m) => m.type === "airPollution")?.avg || 0;
+          return {
+            name: c.country,
+            value: pollution,
+            percent: 0, // Placeholder or calculate relative to max
+          };
+        });
+
+        // Calculate max for progress bar
+        const maxVal = Math.max(...countriesData.map((c) => c.value)) || 1;
+
+        const top4 = countriesData
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 4)
+          .map((c) => ({
+            ...c,
+            percent: Math.round((c.value / maxVal) * 100),
+          }));
 
         setCountries(top4);
       } catch (error) {
