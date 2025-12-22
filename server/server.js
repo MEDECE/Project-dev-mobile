@@ -190,6 +190,181 @@ app.get("/api/users", async (req, res) => {
   }
 });
 
+// Endpoint D: Sensor Distribution by Room Type (for Donut Chart)
+app.get("/api/sensors/distribution", async (req, res) => {
+  try {
+    const distribution = await Sensor.aggregate([
+      {
+        $group: {
+          _id: "$location", // Group by sensor location (room type)
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          name: "$_id",
+          value: "$count",
+        },
+      },
+      { $sort: { value: -1 } },
+    ]);
+    res.json(distribution);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// === DATA ANALYST ENDPOINTS ===
+
+// Endpoint E: Pollution moyenne par taille de maison (Bar Chart)
+app.get("/api/analytics/pollution-by-size", async (req, res) => {
+  try {
+    const result = await Measure.aggregate([
+      { $match: { type: "airPollution" } },
+      {
+        $lookup: {
+          from: "sensors",
+          localField: "sensorID",
+          foreignField: "_id",
+          as: "sensor",
+        },
+      },
+      { $unwind: "$sensor" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "sensor.userID",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $group: {
+          _id: "$user.houseSize",
+          avgPollution: { $avg: "$value" },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          houseSize: "$_id",
+          avgPollution: { $round: ["$avgPollution", 2] },
+          sampleCount: "$count",
+        },
+      },
+      { $sort: { avgPollution: -1 } },
+    ]);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint F: Corrélation Humidité vs Nombre de personnes (Scatter Plot)
+app.get("/api/analytics/humidity-correlation", async (req, res) => {
+  try {
+    const result = await Measure.aggregate([
+      { $match: { type: "humidity" } },
+      {
+        $lookup: {
+          from: "sensors",
+          localField: "sensorID",
+          foreignField: "_id",
+          as: "sensor",
+        },
+      },
+      { $unwind: "$sensor" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "sensor.userID",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      {
+        $group: {
+          _id: "$user._id",
+          personsInHouse: { $first: "$user.personsInHouse" },
+          avgHumidity: { $avg: "$value" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          x: "$personsInHouse",
+          y: { $round: ["$avgHumidity", 2] },
+        },
+      },
+    ]);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint G: Évolution température 2025 (Line Chart)
+app.get("/api/analytics/temperature-trend", async (req, res) => {
+  try {
+    const result = await Measure.aggregate([
+      { $match: { type: "temperature" } },
+      {
+        $addFields: {
+          month: { $month: "$creationDate" },
+          year: { $year: "$creationDate" },
+        },
+      },
+      { $match: { year: 2025 } },
+      {
+        $group: {
+          _id: "$month",
+          avgTemp: { $avg: "$value" },
+          minTemp: { $min: "$value" },
+          maxTemp: { $max: "$value" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          month: "$_id",
+          avg: { $round: ["$avgTemp", 1] },
+          min: { $round: ["$minTemp", 1] },
+          max: { $round: ["$maxTemp", 1] },
+        },
+      },
+      { $sort: { month: 1 } },
+    ]);
+
+    // Convert month number to name
+    const monthNames = [
+      "Jan",
+      "Fév",
+      "Mar",
+      "Avr",
+      "Mai",
+      "Juin",
+      "Juil",
+      "Août",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Déc",
+    ];
+    const formatted = result.map((r) => ({
+      ...r,
+      name: monthNames[r.month - 1] || `M${r.month}`,
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Start Server
 connectDB().then(() => {
   app.listen(PORT, () => {
