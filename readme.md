@@ -1,1 +1,0 @@
-# Dashboard Project CREaTE 2025
