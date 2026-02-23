@@ -1,0 +1,6 @@
+{
+  "updateRappels": {
+    "schedule": "0 0,12 * * *", // tous les jours à minuit et midi
+    "script": "updateRappels.js"
+  }
+}
