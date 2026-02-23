@@ -5,8 +5,11 @@ import 'package:formation_flutter/res/app_theme_extension.dart';
 import 'package:formation_flutter/screens/homepage/homepage_screen.dart';
 import 'package:formation_flutter/screens/product/product_page.dart';
 import 'package:go_router/go_router.dart';
+import 'package:formation_flutter/api/pb_test.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await testPocketBase(); // Test PocketBase
   runApp(const MyApp());
 }
 

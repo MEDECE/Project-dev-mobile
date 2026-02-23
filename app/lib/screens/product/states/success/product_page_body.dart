@@ -9,6 +9,7 @@ import 'package:formation_flutter/screens/product/states/success/tabs/product_ta
 import 'package:formation_flutter/screens/product/states/success/tabs/product_tab1.dart';
 import 'package:formation_flutter/screens/product/states/success/tabs/product_tab2.dart';
 import 'package:formation_flutter/screens/product/states/success/tabs/product_tab3.dart';
+import 'package:formation_flutter/screens/product/states/success/rappel_banner.dart';
 import 'package:provider/provider.dart';
 
 class ProductPageBody extends StatefulWidget {
@@ -62,24 +63,7 @@ class _ProductPageBodyState extends State<ProductPageBody> {
               child: CircularProgressIndicator(),
             ),
           if (!_isLoadingRappels && _isRappel)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                color: Colors.red.shade100,
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning, color: Colors.red),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Ce produit fait l’objet d’un rappel produit',
-                        style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            const RappelBanner(),
           Expanded(
             child: CustomScrollView(
               slivers: <Widget>[

@@ -22,6 +22,9 @@ dependencies:
   dio: 5.9.1
   go_router: 17.1.0
 
+  # PocketBase
+  pocketbase: ^0.16.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
