@@ -1,0 +1,40 @@
+# Ignorer tout par défaut — seuls README.md, app/ et server/ sont trackés
+*
+!.gitignore
+!README.md
+!app/
+!app/**
+!server/
+!server/**
+
+# Artefacts Flutter
+app/build/
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.pub-cache/
+app/.pub/
+app/coverage/
+app/.metadata
+app/**/*.class
+app/**/*.log
+app/**/*.iml
+
+# Android
+app/android/.gradle/
+app/android/local.properties
+app/android/key.properties
+app/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
+
+# iOS
+app/ios/.symlinks/
+app/ios/Flutter/flutter_export_environment.sh
+app/ios/Flutter/Generated.xcconfig
+app/ios/Pods/
+
+# PocketBase
+server/pocketbase
+server/pocketbase.exe
+server/pb_data/
+
+
